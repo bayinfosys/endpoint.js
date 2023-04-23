@@ -1,14 +1,15 @@
 # endpoint.js
 
-Simple `APIEndpoint` class in javascript to encapsulated API calls and allow:
+Simple `APIEndpoint` class in javascript to encapsulate API calls and allow:
 
 + data to be formatted into HTML templates with [mustache.js](https://github.com/janl/mustache.js/).
 + callbacks to be triggered after the API call.
 + per-call overrides for endpoints with variable paths.
 
+
 ## POST Example
 
-To `POST` data to an endpoint you will need to define an `APIEndpoint` object and
+`POST` data to an endpoint requires an `APIEndpoint` object and
 a `HTML` `form` element to collect the data for sending.
 
 In your HTML code define the `APIEndpoint` object:
@@ -39,6 +40,7 @@ when the `submit` button is clicked, the `post_form.onSubmit` function will
 create the JSON object `{"field_a": "hello", "field_b": "world"}` from the 
 form fields and values and send it to the endpoint.
 
+
 ## GET Example
 
 `GET` requests do not require any data, so we can just call the endpoint.
@@ -47,7 +49,7 @@ form fields and values and send it to the endpoint.
 <script type="text/javascript" src="endpoint.js"></script>
 
 <script type="text/javascript">
-get = new APIEndpoint({
+api_get = new APIEndpoint({
   host: "http://api.com/",
   endpoint: "/hello",
   method: "GET",
@@ -70,6 +72,23 @@ This endpoint returns a JSON object like `{"name": "my-name", "location": "home"
 <script id="get-response-template" type="x-tmpl-mustache">
   <b>{{ name }}</b> is at <em>{{ location }}</em>.
 </script>
+```
+
+After calling the endpoint object with:
+
+```javascript
+api_get.call();
+```
+
+(and assuming the endpoint is functioning...) the response will be formatted
+according to the template, and added to `get-response-div` contents.
+
+`get-response-div` will now look like:
+
+```HTML
+<div id="get-response-div">
+<b>my-name</b> is at <em>home</em>.
+</div>
 ```
 
 ## Example Implementation

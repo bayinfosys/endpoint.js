@@ -1,0 +1,203 @@
+<html>
+<head>
+  <title>endpoints.js semantic ui example</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/semantic-ui@2.4.2/dist/semantic.min.css">
+
+  <script src="https://unpkg.com/mustache@latest"></script>
+  <script type="text/javascript" src="endpoint.js"></script>
+
+  <script type="text/javascript">
+  api_server = "http://localhost:8001"
+
+  // endpoint definitions
+
+  const get_comment = new APIEndpoint({
+    host: api_server,
+    endpoint: "/comment",
+    method: "GET",
+    template: "all-comments-template"
+  });
+
+  function get_user_comments_callback(user) {
+    // get the comments for this user
+    // NB: this requires overriding the container so
+    //     comments are correctly associated with user
+    //     we must also append the username path variable
+    get_comment.call({override: {
+      endpoint: "/comment/" + user.username,
+      container: {id: user.username + "-comment-section"}
+    }});
+  }
+
+  const get_users = new APIEndpoint({
+    host: api_server,
+    endpoint: "/user",
+    method: "GET",
+    container: {id: "all-user-response", mode: "rewrite"},
+    template: "user-template",
+    callback: get_user_comments_callback
+  });
+
+  function refresh_all_users() {
+    get_users.call({});
+  }
+
+  // endpoint for the add_user form.
+  // NB: this triggers the all_users_endpoint to run again
+  const post_user = new APIEndpoint({
+    host: api_server,
+    endpoint: "/user",
+    method: "POST",
+    callback: refresh_all_users
+  });
+
+  const post_comment = new APIEndpoint({
+    host: api_server,
+    endpoint: "/comment",
+    method: "POST"
+  });
+  </script>
+</head>
+
+<body>
+  <!-- navigation -->
+  <div class="ui inverted left visible vertical menu sidebar">
+    <div class="item">
+      <img class="ui circular image" src="https://placekitten.com/80/80" /><b>endpoint.js</b>
+    </div>
+    <div class="item">
+      <div class="header">Implementations</div>
+      <div class="menu">
+        <a class="item" href="index.html">basic</a>
+        <a class="item" href="semantic.html">semantic ui</a>
+      </div>
+    </div>
+    <div class="item">
+      <div class="header">API documentation</div>
+      <div class="menu">
+        <a class="item" href="http://localhost:8001/docs">swagger</a>
+        <a class="item" href="http://localhost:8001/redoc">redoc</a>
+      </div>
+    </div>
+    <div class="item">
+      <div class="header">External</div>
+      <div class="menu">
+        <a class="item" href="https://www.wikipedia.org/">wikipedia</a>
+        <a class="item" href="#"></a>
+      </div>
+    </div>
+  </div>
+
+  <!-- main body -->
+  <div class="main ui container">
+    <h1>Semantic UI</h1>
+      <p>This page is styled with <a href="https://semantic-ui.com/introduction/getting-started.html">semantic ui</a>.</p>
+      <p>Users from the API are listed in <a href="https://semantic-ui.com/views/card.html">card elements</a>.</p>
+      <p>Comments can be added to users. Note that when user cards load, or a new comment is added for a user, there is
+         an API call to get the comments for that user. This demonstrates how the APIEndpoint can be parameterised by
+         path variables.</p>
+
+    <h2>List of Users</h2>
+    <div class="ui cards" id="all-user-response">
+    </div>
+
+    <h3>Add a user</h3>
+
+    <div class="ui horizontal segments equal width">
+      <div class="ui segment">
+        <form class="ui form card" onsubmit="post_user.onSubmit(event);">
+          <div class="content">
+            <div class="field">
+              <label for="username">username</label>
+              <input type="text" name="username" placeholder="username" />
+            </div>
+            <div class="field">
+              <label for="password">password</label>
+              <input type="password" name="password" placeholder="password" />
+            </div>
+            <div class="field">
+              <label for="lang_code">language</label>
+              <input type="text" name="lang_code" placeholder="preferred language" />
+            </div>
+            <div class="field">
+              <label for="full_name">name</label>
+              <input type="text" name="full_name" placeholder="your full name" />
+            </div>
+
+            <input type="hidden" name="avatar_image" value="https://placekitten.com/120/120" />
+
+            <div class="inline right field">
+              <button class="ui primary right floated icon button" type="submit"><i class="plus icon"></i></button>
+            </div>
+          </div>
+        </form>
+      </div>
+
+      <div class="ui segment">
+        <p>add a new user to the API.</p>
+        <p>NB: we don't accept avatar images in this form.</p>
+        <p>OnSubmit this form causes all users in the main list to be refreshed.
+           It would be possible to return the new user from the API, create a card
+           from that user with the template, and append it to the user list.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- templates -->
+  <script id="user-template" type="x-tmpl-mustache">
+  <!-- this is the user card -->
+  <div class="card">
+    <div class="content">
+      <img class="ui mini image left floated" src="{{ avatar_image }}" />
+      <div class="header">{{ full_name }}</div>
+      <div class="meta">{{ username }}</div>
+    </div>
+
+    <!-- user comments are fill in a separate API call -->
+    <div class="extra content" id="{{username}}-comment-section"></div>
+  </div>
+  </script>
+
+  <script id="error-template" type="x-tmpl-mustache">
+  <div>
+  <b>{{ summary }}</b>
+  <small>{{ detail }}</small>
+  </div>
+  </script>
+
+  <script id="all-comments-template" type="x-tmpl-mustache">
+  <div class="ui relaxed divided list" id="{{username}}-comments">
+    {{ #comments }}
+    <div class="item">
+      <i class="comment icon"></i>
+      <div class="content">{{ . }}</div>
+    </div>
+    {{ /comments }}
+    <div class="meta">
+      {{ comments.length }} comments
+    </div>
+
+    <form class="ui form" method="POST" 
+     onsubmit="return post_comment.onSubmit(event, override={callback: () => {get_user_comments_callback({username: '{{username }}' })} });"
+    >
+      <input type="hidden" name="username" value="{{ username }}" />
+
+      <div class="inline fields">
+        <div class="field">
+          <input type="text" name="comment" placeholder="Add Comment..." />
+        </div>
+
+        <div class="field">
+          <button class="ui icon button" type="submit"><i class="comment icon"></i></button>
+        </div>
+    </form>
+  </div>
+  </script>
+
+  <!-- load all the user into the list on body load -->
+  <script type="text/javascript">
+  get_users.call({});
+  </script>
+</body>
+</html>

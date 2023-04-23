@@ -1,0 +1,122 @@
+<html>
+<head>
+  <title>Hello</title>
+  <link rel="stylesheet" href="main.css">
+
+  <script src="https://unpkg.com/mustache@latest"></script>
+  <script type="text/javascript" src="endpoint.js"></script>
+
+  <script type="text/javascript">
+  api_server = "http://localhost:8001"
+
+  // endpoint definitions
+  // note we share the response templates with both endpoints
+  const all_users_endpoint = new APIEndpoint({
+    host: api_server,
+    endpoint: "/user",
+    method: "GET",
+    container: {id: "all-user-response", mode: "rewrite"},
+    template: "user-template"
+  });
+
+  function refresh_all_users() {
+    all_users_endpoint.call();
+  }
+
+  // endpoint for the add_user form.
+  // NB: this triggers the all_users_endpoint to run again
+  const add_user_endpoint = new APIEndpoint({
+    host: api_server,
+    endpoint: "/user",
+    method: "POST",
+    template: "user-template",
+    callback: refresh_all_users
+  });
+  </script>
+</head>
+
+<body>
+  <!-- navigation -->
+  <!-- navigation -->
+  <nav>
+    <ul>
+      <li><em>endpoint.js</em></li>
+      <li><b>Implementations</b>
+      <ul>
+         <li><a href="index.html">basic</a></li>
+         <li><a href="semantic.html">semantic ui</a></li>
+      </ul>
+      </li>
+      <li><b>API documentation</b>
+      <ul>
+        <li><a href="http://localhost:8001/docs">swagger</a></li>
+        <li><a href="http://localhost:8001/redoc">redoc</a></li>
+      </ul>
+      </li>
+      <li><b>External</b>
+      <ul>
+        <li><a href="https://www.wikipedia.org/">wikipedia</a></li>
+      </ul>
+      </li>
+    </ul>
+  </nav>
+
+  <!-- main body -->
+  <main>
+    <article>
+      <h1>Basic HTML/CSS</h1>
+        <p>This page is styled with a simple CSS style sheet of basic HTML structuring elements.</p>
+        <p>Users from the API are listed in a <b>div</b> element with basic formatting.</p>
+
+      <h2>List of Users</h2>
+      <div id="all-user-response">
+      </div>
+
+      <h3>Add a user</h3>
+
+      <form method="post" onsubmit="add_user_endpoint.onSubmit(event);">
+        <field>
+          <label for="username">username</label>
+          <input type="text" name="username" id="username" placeholder="username" />
+        </field>
+        <field>
+          <label for="password">password</label>
+          <input type="password" name="password" id="password" placeholder="password" />
+        </field>
+        <field>
+          <label for="lang_code">language</label>
+          <input type="text" name="lang_code" id="lang_code" placeholder="preferred language" />
+        </field>
+        <field>
+          <label for="full_name">name</label>
+          <input type="text" name="full_name" id="full_name" placeholder="your full name" />
+         </field>
+        <input type="hidden" name="avatar_image" value="https://placekitten.com/120/120" />
+        <input type="submit" value="submit"></input>
+      </form>
+
+    </article>
+  </main>
+
+  <!-- templates -->
+  <script id="user-template" type="x-tmpl-mustache">
+  <div>
+    <b>{{ username }}</b><br />
+    <em>{{ full_name }}</em><br />
+    <small>{{ lang_code }}</small><br />
+  </div>
+  </script>
+
+  <script id="error-template" type="x-tmpl-mustache">
+  <div>
+  <b>{{ summary }}</b>
+  <small>{{ detail }}</small>
+  </div>
+  </script>
+
+  <!-- load all the user into the list on body load -->
+  <script type="text/javascript">
+  all_users_endpoint.call();
+  </script>
+</body>
+</html>

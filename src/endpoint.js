@@ -48,7 +48,7 @@ class APIEndpoint {
     }
   }
 
-  async api_call({data, override}) {
+  async api_call({data = null, override = null} = {}) {
     /*
      * call the api endpoint
      *
@@ -73,17 +73,24 @@ class APIEndpoint {
       headers: {"content-type": "application/json"},
     }
 
+    if (data) {
+      call_params.body = JSON.stringify(data);
+    }
+
     if (((this.method == "PUT") || (this.method == "POST") || (this.method == "PATCH")) && (!data)) {
       console.warn(this.method + " to '" + uri + "' with no data");
       throw {
         name: "no data",
         message: "no data passed to a data endpoint",
-        detail: {uri: uri}
+        detail: {uri: uri, parameters: call_params}
       }
-    }
-
-    if ((data != null) && (data.size != 0)) {
-      call_params.body = JSON.stringify(data);
+    } else if ((this.method == "GET") && (data)) {
+      console.warn(this.method + " to '" + uri + "' with data");
+      throw {
+        name: "unexpected data",
+        message: "GET requests should not have a body",
+        detail: {uri: uri, parameters: call_params}
+      }
     }
 
     let r;

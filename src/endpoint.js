@@ -82,7 +82,7 @@ class APIEndpoint {
       }
     }
 
-    if (data != null) {
+    if ((data != null) && (data.size != 0)) {
       call_params.body = JSON.stringify(data);
     }
 

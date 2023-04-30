@@ -15,7 +15,7 @@ a `HTML` `form` element to collect the data for sending.
 In your HTML code define the `APIEndpoint` object:
 
 ```javascript
-<script type="text/javascript" src="endpoint.js"></script>
+<script type="text/javascript" src="https://cdn.jsdelivr.net/gh/bayinfosys/endpoint.js/src/endpoint.js"></script>
 
 <script type="text/javascript">
 post_form = new APIEndpoint({
@@ -46,7 +46,7 @@ form fields and values and send it to the endpoint.
 `GET` requests do not require any data, so we can just call the endpoint.
 
 ```javascript
-<script type="text/javascript" src="endpoint.js"></script>
+<script type="text/javascript" src="https://cdn.jsdelivr.net/gh/bayinfosys/endpoint.js/src/endpoint.js"></script>
 
 <script type="text/javascript">
 api_get = new APIEndpoint({

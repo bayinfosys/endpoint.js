@@ -48,7 +48,7 @@ class APIEndpoint {
     }
   }
 
-  async api_call({data, override}) {
+  async api_call({data = null, override = null} = {}) {
     /*
      * call the api endpoint
      *
@@ -73,17 +73,24 @@ class APIEndpoint {
       headers: {"content-type": "application/json"},
     }
 
+    if (data) {
+      call_params.body = JSON.stringify(data);
+    }
+
     if (((this.method == "PUT") || (this.method == "POST") || (this.method == "PATCH")) && (!data)) {
       console.warn(this.method + " to '" + uri + "' with no data");
       throw {
         name: "no data",
         message: "no data passed to a data endpoint",
-        detail: {uri: uri}
+        detail: {uri: uri, parameters: call_params}
       }
-    }
-
-    if (data != null) {
-      call_params.body = JSON.stringify(data);
+    } else if ((this.method == "GET") && (data)) {
+      console.warn(this.method + " to '" + uri + "' with data");
+      throw {
+        name: "unexpected data",
+        message: "GET requests should not have a body",
+        detail: {uri: uri, parameters: call_params}
+      }
     }
 
     let r;
@@ -238,25 +245,24 @@ class APIEndpoint {
     // default form submission handler
     e.preventDefault();
 
-    const form_elements = e.target.elements;
+    const form_elements = Array.from(e.target.elements);
+    let submission = {};
 
-    const submission = {};
+    if (!form_elements.some(el => el.type !== "submit")) {
+      submission = null;
+    } else {
+      form_elements.forEach((el, i) => {
+        if (el.type == "submit") { return; }
 
-    for (var i=0; i<form_elements.length; i++) {
-      const el = form_elements.item(i);
+        console.log(el);
 
-      if (el.type == "submit") {
-        continue;
-      }
+        if (!el.name) {
+          console.error(`form element ${i} [${el.type}] has no 'name' attribute`);
+          return;
+        }
 
-      console.log(el);
-
-      if (!el.name) {
-        console.error(`form element ${i} has no 'name' attribute`);
-        continue;
-      }
-
-      submission[el.name] = el.value;
+        submission[el.name] = el.value;
+      });
     }
 
     console.log(submission, override);

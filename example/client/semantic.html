@@ -101,8 +101,14 @@
     <div class="ui cards" id="all-user-response">
     </div>
 
+    <!-- this is an example of calling a GET from a button -->
+    <form class="ui form" action="" onsubmit="get_users.onSubmit(event)">
+      <button class="ui button">refresh users</button>
+    </form>
+
     <h3>Add a user</h3>
 
+    <!-- this example submits a form to an endpoint with POST -->
     <div class="ui horizontal segments equal width">
       <div class="ui segment">
         <form class="ui form card" onsubmit="post_user.onSubmit(event);">
@@ -195,7 +201,7 @@
   </div>
   </script>
 
-  <!-- load all the user into the list on body load -->
+  <!-- this example calls the api from code -->
   <script type="text/javascript">
   get_users.call({});
   </script>

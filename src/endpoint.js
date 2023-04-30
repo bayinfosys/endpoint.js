@@ -245,25 +245,24 @@ class APIEndpoint {
     // default form submission handler
     e.preventDefault();
 
-    const form_elements = e.target.elements;
+    const form_elements = Array.from(e.target.elements);
+    let submission = {};
 
-    const submission = {};
+    if (!form_elements.some(el => el.type !== "submit")) {
+      submission = null;
+    } else {
+      form_elements.forEach((el, i) => {
+        if (el.type == "submit") { return; }
 
-    for (var i=0; i<form_elements.length; i++) {
-      const el = form_elements.item(i);
+        console.log(el);
 
-      if (el.type == "submit") {
-        continue;
-      }
+        if (!el.name) {
+          console.error(`form element ${i} [${el.type}] has no 'name' attribute`);
+          return;
+        }
 
-      console.log(el);
-
-      if (!el.name) {
-        console.error(`form element ${i} has no 'name' attribute`);
-        continue;
-      }
-
-      submission[el.name] = el.value;
+        submission[el.name] = el.value;
+      });
     }
 
     console.log(submission, override);

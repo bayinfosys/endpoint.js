@@ -5,16 +5,21 @@ class APIEndpoint {
    * process:
    * + api endpoint is hit
    * + data is recieved
+   * + [optional] api response is passed to process_response for reformatting
    * + data is rendered to a mustache template to a doc fragment
    * + doc fragment is appended to the container inner html
    *   + if the container.mode parameter is not "append" the container contents
    *     are replaced on each api call
+   * + [optional] callback function is called
    */
-  constructor({host, endpoint, method, container, template, error_template, callback} = {}) {
+  constructor({host, endpoint, method, process_response, container, template, error_template, callback} = {}) {
     /**
      * host: string, uri of the API
      * endpoint: string, path fragment of the API endpoint
      * method: GET, POST, etc
+     * process_response: function to call with the api response before passing to templating
+     *                   this allows reformatting of the response for the template
+     *                   must return json
      * container: string|object, id of the DOM object to take the results
      *            object: {id: DOM object id, mode: (append|rewrite) whether the inner html should be appended to or overwritten on new data}
      * template: string, id of the mustache template to render with endpoint data
@@ -28,6 +33,7 @@ class APIEndpoint {
     this.host = host;
     this.endpoint = endpoint;
     this.method = method;
+    this.process_response = process_response;
     this.template = template;
     this.error_template = error_template;
     this.callback = callback;
@@ -180,6 +186,13 @@ class APIEndpoint {
 
     // FIXME: if the endpoint does not return a list we have error
     this.api_call({data: submission, override: override})
+      .then((data) => {
+        if (this.process_response) {
+          return this.process_response(data);
+        } else {
+          return data;
+        }
+      })
       .then((data) => {
         // get the container for rendered template output
         let container;

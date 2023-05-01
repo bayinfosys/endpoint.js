@@ -29,10 +29,23 @@
     }});
   }
 
+  function get_users_response_processor(users) {
+    console.log("API user data: ", users);
+
+    const modifiedUsers = users.map(({ full_name, ...rest }) => {
+      return { full_name: full_name.toUpperCase(), ...rest };
+    });
+
+    console.log("modified user data: ", modifiedUsers);
+
+    return modifiedUsers;
+  }
+
   const get_users = new APIEndpoint({
     host: api_server,
     endpoint: "/user",
     method: "GET",
+    process_response: get_users_response_processor,
     container: {id: "all-user-response", mode: "rewrite"},
     template: "user-template",
     callback: get_user_comments_callback

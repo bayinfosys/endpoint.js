@@ -95,3 +95,11 @@ according to the template, and added to `get-response-div` contents.
 
 See `./examples` for a simple user management API with interfaces
 in basic HTML and [semantic UI](https://semantic-ui.com/).
+
+Run the example with:
+
+```bash
+make build && make run
+```
+and navigate to `http://localhost:8000` for HTML interface,
+and `http://localhost:8001/docs` for swagger interface to API.

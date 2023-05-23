@@ -1,6 +1,7 @@
 import os
 import sys
 import logging
+import asyncio
 
 from typing import List
 from pydantic import BaseModel
@@ -62,6 +63,14 @@ class GetUserResponse(BaseModel):
 class GetCommentsResponse(BaseModel):
   username: str
   comments: List[str]
+
+
+class DelayMessage(BaseModel):
+  username: str
+  delay: int = 10
+
+class DelayResponse(BaseModel):
+  message: str
 
 
 def create_dummy_users(cnt: int):
@@ -153,6 +162,14 @@ def get_user_comments(request: Request, response: Response, username: str):
         username=username,
         comments=[]
     )
+
+
+@app.post("/delay", response_model=DelayResponse)
+async def delayed_response(request: Request, response: Response, message: DelayMessage):
+  await asyncio.sleep(message.delay)
+  return DelayResponse(
+      message=f"hello {message.username}, {message.delay}s has passed"
+  )
 
 
 @app.get("/status")

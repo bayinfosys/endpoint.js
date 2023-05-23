@@ -3,30 +3,43 @@ class APIEndpoint {
    * simple class to encapsulate hitting and endpoint and adding the response to the DOM
    *
    * process:
+   * + [optional] callbacks["on_init"] is called
    * + api endpoint is hit
    * + data is recieved
-   * + [optional] api response is passed to process_response for reformatting
+   * + [optional] api response is passed to callbacks["on_receive"] for reformatting
    * + data is rendered to a mustache template to a doc fragment
    * + doc fragment is appended to the container inner html
    *   + if the container.mode parameter is not "append" the container contents
    *     are replaced on each api call
-   * + [optional] callback function is called
+   * + [optional] callback["on_done"] function is called
    */
-  constructor({host, endpoint, method, process_response, container, template, error_template, callback} = {}) {
+  constructor({host, endpoint, method, process_response, container, template, error_template, callbacks} = {}) {
     /**
      * host: string, uri of the API
      * endpoint: string, path fragment of the API endpoint
      * method: GET, POST, etc
-     * process_response: function to call with the api response before passing to templating
-     *                   this allows reformatting of the response for the template
-     *                   must return json
      * container: string|object, id of the DOM object to take the results
      *            object: {id: DOM object id, mode: (append|rewrite) whether the inner html should be appended to or overwritten on new data}
      * template: string, id of the mustache template to render with endpoint data
      * error_template: optional string, id of the mustache template for error messages
-     * callback: function to call after the container has been updated
-     *           NB: this cannot be another endpoint.call method (needs a closure?)
+     * callbacks: functions to call after various events in the endpoint invocation lifecycle
+     *           + on_init: after the initial call
+     *           + on_recieve: after the response from the endpoint (this function accepts
+     *                         the response and may return a modified form of the response
+     *                         for mutation to match the template)
+     *           + on_done: after the template has been formated and inserted into the DOM
      *
+     *
+     *
+     * callback notes:
+     * + callbacks cannot be another endpoint.call method (needs a closure?)
+     * + on_done is called once for every array in the output (if an array)
+     *
+
+     * process_response: function to call with the api response before passing to templating
+     *                   this allows reformatting of the response for the template
+     *                   must return json
+
      * call() and onSubmit() methods take an optional `override` object which allows
      * local overrides for containers and templates allowing parameterised response handling
      */
@@ -36,7 +49,7 @@ class APIEndpoint {
     this.process_response = process_response;
     this.template = template;
     this.error_template = error_template;
-    this.callback = callback;
+    this.callbacks = callbacks || {};
 
     // container can be an object with keys or a single string
     if (!container) {
@@ -52,6 +65,17 @@ class APIEndpoint {
         }
       }
     }
+  }
+
+  _chk_clbks() {
+    // check all defined callbacks are functions
+    // TODO
+    return true;
+  }
+
+  _clbk(name) {
+    // common callback access point
+    return (this.callbacks && this.callbacks[name]) ? this.callbacks[name] : null;
   }
 
   async api_call({data = null, override = null} = {}) {
@@ -70,7 +94,7 @@ class APIEndpoint {
         (override && override.endpoint) ? override.endpoint : this.endpoint
     ].join("");
 
-    console.log(uri);
+    // console.log(uri);
 
     // FIXME: make call_params a callable
     var call_params = {
@@ -182,16 +206,16 @@ class APIEndpoint {
      *   + error id
      * for this specific call
      */
-    console.log("call", this.host, this.endpoint, submission, override);
+    // console.log("call", this.host, this.endpoint, submission, override);
+
+    if (this._clbk("on_init")) {
+      this._clbk("on_init")(this);
+    }
 
     // FIXME: if the endpoint does not return a list we have error
     this.api_call({data: submission, override: override})
       .then((data) => {
-        if (this.process_response) {
-          return this.process_response(data);
-        } else {
-          return data;
-        }
+        return (this._clbk("on_recieve")) ? this._clbk("on_receive")(data) : data;
       })
       .then((data) => {
         // get the container for rendered template output
@@ -231,16 +255,18 @@ class APIEndpoint {
         }
 
         // run the callback on the response data
-        let fn;
-        if (override && override.callback) { fn = override.callback; }
-        else if (this.callback) { fn = this.callback; }
-        else { fn = null; }
+        let on_done_fn;
+        if (override && override.callbacks && override.callbacks["on_done"]) {
+          on_done_fn = override.callbacks["on_done"];
+        } else {
+          on_done_fn = this._clbk("on_done");
+        }
 
-        if (fn) {
+        if (on_done_fn) {
           if (Array.isArray(data)) {
-            data.forEach((x) => fn(x));
+            data.forEach((x) => on_done_fn(x));
           } else {
-            fn(data);
+            on_done_fn(data);
           }
         }
       })
@@ -267,8 +293,6 @@ class APIEndpoint {
       form_elements.forEach((el, i) => {
         if (el.type == "submit") { return; }
 
-        console.log(el);
-
         if (!el.name) {
           console.error(`form element ${i} [${el.type}] has no 'name' attribute`);
           return;
@@ -277,8 +301,6 @@ class APIEndpoint {
         submission[el.name] = el.value;
       });
     }
-
-    console.log(submission, override);
 
     this.call({submission: submission, override: override});
   }

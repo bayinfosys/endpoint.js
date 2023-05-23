@@ -45,10 +45,12 @@
     host: api_server,
     endpoint: "/user",
     method: "GET",
-    process_response: get_users_response_processor,
     container: {id: "all-user-response", mode: "rewrite"},
     template: "user-template",
-    callback: get_user_comments_callback
+    callbacks: {
+      on_receive: get_users_response_processor,
+      on_done: get_user_comments_callback
+    }
   });
 
   function refresh_all_users() {
@@ -61,13 +63,48 @@
     host: api_server,
     endpoint: "/user",
     method: "POST",
-    callback: refresh_all_users
+    callbacks: { on_done: refresh_all_users }
   });
 
   const post_comment = new APIEndpoint({
     host: api_server,
     endpoint: "/comment",
     method: "POST"
+  });
+
+  /*
+   * messages with placeholders
+   */
+  function create_message_placeholder(endpoint) {
+    console.log("create_message_placeholder");
+    endpoint.append_template(
+      "message-placeholder-template",
+      {id: "message-container", mode: "overwrite"},
+      {}
+    );
+  }
+
+  function process_message_data(x) {
+    console.log("process_message_data ", x);
+  }
+
+  function update_message_placeholder(x) {
+    console.log("update_message_placeholder ", x);
+  }
+
+  // endpoint for a long running function
+  // show how to create a placeholder using callbacks
+  const message_endpoint = new APIEndpoint({
+    host: api_server,
+    endpoint: "/delay",
+    method: "POST",
+    template: "message-template",
+    container: {id: "message-container", mode: "rewrite"},
+    callbacks: {
+      on_init: create_message_placeholder,
+      on_receive: process_message_data,
+      on_done: update_message_placeholder
+    }
   });
   </script>
 </head>
@@ -115,9 +152,11 @@
     </div>
 
     <!-- this is an example of calling a GET from a button -->
-    <form class="ui form" action="" onsubmit="get_users.onSubmit(event)">
-      <button class="ui button">refresh users</button>
-    </form>
+    <div class="ui segment">
+      <form class="ui form" action="" onsubmit="get_users.onSubmit(event)">
+        <button class="ui button">refresh users</button>
+      </form>
+    </div>
 
     <h3>Add a user</h3>
 
@@ -160,6 +199,21 @@
            from that user with the template, and append it to the user list.
         </p>
       </div>
+    </div>
+
+    <h3>Send a message</h3>
+
+    <div id="message-container">
+    </div>
+
+    <div class="ui segment">
+      <form class="ui form" method="post" onsubmit="message_endpoint.onSubmit(event);">
+        <div class="field">
+          <label for="username">username</label>
+          <input type="text" name="username" id="username" placeholder="reminder for username" />
+        </div>
+        <button class="ui primary right floated icon button" type="submit"><i class="plus icon"></i></button>
+      </form>
     </div>
   </div>
 
@@ -211,6 +265,26 @@
           <button class="ui icon button" type="submit"><i class="comment icon"></i></button>
         </div>
     </form>
+  </div>
+  </script>
+
+
+  <script id="message-placeholder-template" type="x-tmpl-mustache">
+  <div class="ui icon message">
+    <i class="notched circle loading icon"></i>
+    <div class="content">
+      <div class="header">
+        Just one second
+      </div>
+      <p>We're fetching that content for you.</p>
+    </div>
+  </div>
+  </script>
+
+  <script id="message-template" type="x-tmpl-mustache">
+  <div class="ui positive message">
+    <div class="header">Message</div>
+    <p>{{ message }}</p>
   </div>
   </script>
 
